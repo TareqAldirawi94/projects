@@ -56,10 +56,6 @@ set.seed(42)
 if (!dir.exists("figures")) dir.create("figures")
 if (!dir.exists("results")) dir.create("results")
 
-cat("═══════════════════════════════════════════════════════════════════\n")
-cat("  Multiple Hypothesis Testing for Gene Expression Analysis\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
-
 # ── 1. Load and Explore the Golub Leukemia Dataset ──────────────────────────
 
 data(golub, package = "multtest")
@@ -76,13 +72,6 @@ n_genes   <- nrow(expression_matrix)
 n_samples <- ncol(expression_matrix)
 n_all     <- sum(class_labels == 0)
 n_aml     <- sum(class_labels == 1)
-
-cat("── Dataset Summary ─────────────────────────────────────────────\n")
-cat(sprintf("  Total genes:          %s\n", format(n_genes, big.mark = ",")))
-cat(sprintf("  Total samples:        %d\n", n_samples))
-cat(sprintf("  ALL samples:          %d\n", n_all))
-cat(sprintf("  AML samples:          %d\n", n_aml))
-cat("────────────────────────────────────────────────────────────────\n\n")
 
 # ── 2. Conduct Gene-Wise Hypothesis Tests ────────────────────────────────────
 
@@ -131,8 +120,6 @@ run_ttests <- function(expr_matrix, labels) {
 
 results <- run_ttests(expression_matrix, class_labels)
 
-cat(sprintf("  Completed %s hypothesis tests.\n\n", format(n_genes, big.mark = ",")))
-
 # ── 3. Multiple Testing Correction Methods ───────────────────────────────────
 
 alpha <- 0.05  # Significance level / target FDR
@@ -166,8 +153,6 @@ cat(sprintf("    (%.1f%% of genes estimated to be truly null)\n\n",
             qobj$pi0 * 100))
 
 # ── 4. Summary Comparison ────────────────────────────────────────────────────
-
-cat("── Method Comparison Summary ───────────────────────────────────\n\n")
 
 comparison <- data.frame(
   Method = c("No Correction", "Bonferroni (FWER)",
@@ -300,17 +285,6 @@ overlap_data <- data.frame(
   )
 )
 
-# Proper overlap summary
-cat("── Overlap Between Methods ─────────────────────────────────────\n")
-cat(sprintf("  Genes significant by all three:     %d\n",
-            sum(results$sig_bonferroni & results$sig_bh & results$sig_qvalue)))
-cat(sprintf("  BH but not Bonferroni:              %d\n",
-            sum(results$sig_bh & !results$sig_bonferroni)))
-cat(sprintf("  q-value but not BH:                 %d\n",
-            sum(results$sig_qvalue & !results$sig_bh)))
-cat(sprintf("  Unique to q-value:                  %d\n",
-            sum(results$sig_qvalue & !results$sig_bh & !results$sig_bonferroni)))
-cat("────────────────────────────────────────────────────────────────\n\n")
 
 # --- 5e. Storey's π₀ estimation plot ---
 p5 <- ggplot(data.frame(lambda = qobj$lambda, pi0_lambda = qobj$pi0.lambda),
@@ -379,15 +353,3 @@ print(top_biomarkers, row.names = FALSE)
 # Save full results
 write.csv(results, "results/full_results.csv", row.names = FALSE)
 write.csv(top_biomarkers, "results/top_biomarkers.csv", row.names = FALSE)
-
-cat("\n\n── Output Files ────────────────────────────────────────────────\n")
-cat("  figures/01_pvalue_distribution.png\n")
-cat("  figures/02_adjusted_pvalue_comparison.png\n")
-cat("  figures/03_volcano_plot.png\n")
-cat("  figures/04_pi0_estimation.png\n")
-cat("  figures/05_rejection_curves.png\n")
-cat("  results/full_results.csv\n")
-cat("  results/top_biomarkers.csv\n")
-cat("════════════════════════════════════════════════════════════════\n")
-cat("  Analysis complete.\n")
-cat("════════════════════════════════════════════════════════════════\n")
