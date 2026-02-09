@@ -37,10 +37,6 @@ set.seed(2025)
 if (!dir.exists("figures")) dir.create("figures")
 if (!dir.exists("results")) dir.create("results")
 
-cat("═══════════════════════════════════════════════════════════════════\n")
-cat("  Conformal Prediction for Survival Analysis\n")
-cat("═══════════════════════════════════════════════════════════════════\n\n")
-
 # ── 1. Load and Prepare Data ─────────────────────────────────────────────────
 
 data(lung, package = "survival")
@@ -55,16 +51,7 @@ lung_clean <- lung %>%
 
 n <- nrow(lung_clean)
 
-cat("── Dataset Summary ─────────────────────────────────────────────\n")
-cat(sprintf("  Total patients (complete cases): %d\n", n))
-cat(sprintf("  Events (deaths):                %d\n", sum(lung_clean$status == 2)))
-cat(sprintf("  Censored:                       %d\n", sum(lung_clean$status == 1)))
-cat(sprintf("  Median survival:                %d days\n", median(lung_clean$time)))
-cat("────────────────────────────────────────────────────────────────\n\n")
-
 # ── 2. Split Conformal Prediction ────────────────────────────────────────────
-
-cat("── Split Conformal Prediction (α = 0.05) ──────────────────────\n\n")
 
 alpha <- 0.05  # Target miscoverage rate
 
@@ -81,18 +68,12 @@ train_data <- lung_clean[train_idx, ]
 calib_data <- lung_clean[calib_idx, ]
 test_data  <- lung_clean[test_idx, ]
 
-cat(sprintf("  Training set:    %d patients\n", nrow(train_data)))
-cat(sprintf("  Calibration set: %d patients\n", nrow(calib_data)))
-cat(sprintf("  Test set:        %d patients\n\n", nrow(test_data)))
-
 # Fit Cox PH model on training data
 cox_fit <- coxph(Surv(time, status == 2) ~ age + sex + ph.ecog + ph.karno + wt.loss,
                  data = train_data)
 
-cat("  Cox PH Model Summary:\n")
 cox_summary <- summary(cox_fit)
 print(round(cox_summary$coefficients[, c(1, 2, 5)], 4))
-cat("\n")
 
 # ── Nonconformity scores on calibration set ──────────────────────────────────
 
@@ -138,8 +119,6 @@ n_calib_eff <- length(calib_scores_all)
 q_level <- ceiling((1 - alpha) * (n_calib_eff + 1)) / n_calib_eff
 conformal_quantile <- quantile(calib_scores_all, probs = min(q_level, 1))
 
-cat(sprintf("  Conformal quantile (log-scale): %.3f\n", conformal_quantile))
-
 # ── Prediction intervals for test set ────────────────────────────────────────
 
 # Intervals on log scale, then transform back
@@ -155,13 +134,7 @@ test_covered <- (test_data$time >= test_lower) &
 empirical_coverage <- mean(test_covered)
 avg_width <- mean(test_upper - test_lower)
 
-cat(sprintf("  Empirical coverage on test set: %.1f%% (target: %.0f%%)\n",
-            empirical_coverage * 100, (1 - alpha) * 100))
-cat(sprintf("  Average interval width:         %.0f days\n\n", avg_width))
-
 # ── 3. Naive Parametric Intervals (Comparison) ──────────────────────────────
-
-cat("── Naive Parametric Intervals (Comparison) ─────────────────────\n\n")
 
 # Simple log-normal intervals based on residual variance
 log_times <- log(train_data$time[train_data$status == 2] + 1)
@@ -187,8 +160,6 @@ cat(sprintf("  Naive coverage on test set:     %.1f%% (target: %.0f%%)\n",
 cat(sprintf("  Naive average interval width:   %.0f days\n\n", naive_width))
 
 # ── 4. Visualizations ────────────────────────────────────────────────────────
-
-cat("Generating figures...\n\n")
 
 theme_surv <- function() {
   theme_minimal(base_size = 12) +
@@ -312,13 +283,3 @@ ggsave("figures/04_kaplan_meier.png", p4, width = 8, height = 5, dpi = 300)
 write.csv(test_results, "results/test_predictions.csv", row.names = FALSE)
 write.csv(coverage_df, "results/coverage_summary.csv", row.names = FALSE)
 
-cat("── Output Files ────────────────────────────────────────────────\n")
-cat("  figures/01_conformal_intervals.png\n")
-cat("  figures/02_coverage_comparison.png\n")
-cat("  figures/03_width_distribution.png\n")
-cat("  figures/04_kaplan_meier.png\n")
-cat("  results/test_predictions.csv\n")
-cat("  results/coverage_summary.csv\n")
-cat("════════════════════════════════════════════════════════════════\n")
-cat("  Analysis complete.\n")
-cat("════════════════════════════════════════════════════════════════\n")
